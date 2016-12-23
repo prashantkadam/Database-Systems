@@ -1,0 +1,18 @@
+# .cshrc v. 2.1 Executed by csh for each process.
+# There is now a global .cshrc, so anything placed here
+# is for your local account only. You may override global parameters.
+# If you want to add a directory to your path type something like:
+#       setenv PATH ${PATH}:additional-path:additional-path
+
+setenv QUEUE pod1        #define default printer for dlpr
+setenv EDITOR "pico -t"  #define default editor
+setenv PRINTER pod1      #define default printer for lpr
+setenv WINDOW_MGR twm    #define default window manager
+
+setenv CLASSPATH .:/opt/local/oracle/product/11.1.0/jdbc/lib/ojdbc5.jar:/opt/local/oracle/product/11.1.0/jlib/orai18n.jar:/opt/local/oracle/product/11.1.0/bin/sqlldr
+
+setenv ORACLE_HOME /local/opt/oracle/product/11.2.0/instantclient_11_2
+setenv TNS_ADMIN /local/opt/oracle/product/11.2.0/instantclient_11_2
+setenv LD_LIBRARY_PATH /local/opt/oracle/product/11.2.0/instantclient_11_2
+setenv PATH {$PATH}:/local/opt/oracle/product/11.2.0/instantclient_11_2
+

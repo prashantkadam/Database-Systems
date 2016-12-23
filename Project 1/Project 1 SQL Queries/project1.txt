@@ -1,0 +1,489 @@
+SQL> start query1
+SQL> --Find the dept_code, course# and title of each course that was offered in the Spring semester of 2016. In the
+SQL> --output, dept_code and course# of each course should be concatenated under a new column header course_id.
+SQL> 
+SQL> select co.dept_code || co.course# as course_id,co.TITLE
+  2  from Courses co
+  3  where  (co.dept_code, co.course#) in(
+  4  select cs.dept_code, cs.course#
+  5  from classes cs where cs.semester = 'Spring' and cs.year = 2016
+  6  );
+
+COURSE_ID                                    TITLE                              
+-------------------------------------------- --------------------               
+CS432                                        database systems                   
+CS240                                        data structure                     
+Math221                                      calculus I                         
+CS532                                        database systems                   
+
+SQL> start query2
+SQL> --Find the B#, first name, last name and GPA of each student who has taken at least one CS course and at
+SQL> --least one math course.
+SQL> 
+SQL> select B#,firstname, lastname, gpa
+  2  from Students
+  3  where B# in (
+  4  				     select e.B#
+  5  				     from enrollments e join classes c on e.classid = c.classid
+  6  				     where c.dept_code like 'Math'
+  7  	     INTERSECT
+  8  	     select e.B#
+  9  				     from enrollments e join classes c on e.classid = c.classid
+ 10  				     where c.dept_code = 'CS'
+ 11  			     );
+
+B#   FIRSTNAME       LASTNAME               GPA                                 
+---- --------------- --------------- ----------                                 
+B001 Anne            Broder                3.17                                 
+
+SQL> start query3
+SQL> --query3.sql
+SQL> --Find the dept_code and course# of each course that was not offered in the Fall semester of 2015.
+SQL> 
+SQL> select co.dept_code, co.course#
+  2  from COURSES co
+  3  where co.COURSE# in (
+  4  	   select course# from COURSES
+  5  	   minus
+  6  	   select course#
+  7  	   from Classes
+  8  	   WHERE semester like 'Fall' and year = 2015
+  9  );
+
+DEPT    COURSE#                                                                 
+---- ----------                                                                 
+Biol        425                                                                 
+CS          240                                                                 
+CS          432                                                                 
+CS          532                                                                 
+CS          552                                                                 
+Math        221                                                                 
+
+6 rows selected.
+
+SQL> start query4
+SQL> --Find the B#, firstname, lastname and GPA of each graduate student who has received a grade below B (i.e.,
+SQL> --B-, C+, C, C-, D, F) at least one course he/she has taken.
+SQL> 
+SQL> select B#,firstname, lastname, gpa
+  2  from students
+  3  where status like 'MS' and B# in (
+  4  				     select e.B#
+  5  				     from enrollments e
+  6  				     where e.lgrade in ( 'B-', 'C+', 'C', 'C-', 'D', 'F')
+  7  			     );
+
+no rows selected
+
+SQL> 
+SQL> start query5
+SQL> --Find the firstname and lastname of each student who has never received an A for any course he/she has
+SQL> --taken. In the output, firstname and lastname of each student should be concatenated with a space in between
+SQL> --under a new column header name.
+SQL> 
+SQL> select firstname || ' ' || lastname as name
+  2  from Students
+  3  where B# not in (
+  4  				     select e.B#
+  5  				     from enrollments e
+  6  				     where e.lgrade like 'A'
+  7  			     ) and B# in ( select e1.B#
+  8  				     from enrollments e1 );
+
+NAME                                                                            
+-------------------------------                                                 
+Terry Buttler                                                                   
+Barbara Callan                                                                  
+Jack Smith                                                                      
+
+SQL> start query6
+SQL> --Find student B# and faculty B# pairs (named student_B# and faculty_B#, respectively)
+SQL> --such that the student has taken a course
+SQL> --from the faculty but they are not from the same department
+SQL> 
+SQL> SELECT e.B# as student_B#, c.faculty_B# as faculty_B#
+  2  from CLASSES c join ENROLLMENTS e on c.CLASSID = e.classid
+  3  INTERSECT
+  4  select s.B#,f.B#
+  5  from STUDENTS s, FACULTY f
+  6  where s.DEPTNAME not like f.DEPTNAME;
+
+STUD FACU                                                                       
+---- ----                                                                       
+B001 B103                                                                       
+B004 B101                                                                       
+B004 B104                                                                       
+B006 B102                                                                       
+B007 B105                                                                       
+
+SQL> start query7
+SQL> --Find the dept_code and course# of each course that has been offered the most number of times
+SQL> --(each record in the classes table corresponds to a course offering).
+SQL> --Note that it is possible that more than one course may satisfy this query condition;
+SQL> --in this case, all such courses should be retrieved.
+SQL> 
+SQL> select dept_code,course#
+  2  from(
+  3  	     SELECT dept_code,course#,count(*) as num
+  4  	     FROM CLASSES
+  5  	     group by Course#,dept_code
+  6  	    -- order by num desc
+  7  ) t
+  8  where t.num = (
+  9  select max(num)
+ 10  from(
+ 11  	     SELECT dept_code,course#,count(*) as num
+ 12  	     FROM CLASSES
+ 13  	     group by Course#,dept_code
+ 14  	     --order by num desc
+ 15  	     )
+ 16  	     );
+
+DEPT    COURSE#                                                                 
+---- ----------                                                                 
+CS          432                                                                 
+Math        314                                                                 
+
+SQL> start query8
+SQL> --Find the classid, dept_code and course# of each class offered in Spring 2016 that is not full
+SQL> --and for each such class, also list the number of seats available (computed by limit – class_size)
+SQL> --under the header “seats_available”.
+SQL> 
+SQL> select classid, dept_code, course#, LIMIT - CLASS_SIZE as seats_available
+  2  from CLASSES
+  3  where semester = 'Spring' and year = 2016 and  CLASS_SIZE < LIMIT;
+
+CLASS DEPT    COURSE# SEATS_AVAILABLE                                           
+----- ---- ---------- ---------------                                           
+c0005 CS          240               1                                           
+c0001 CS          432               1                                           
+c0006 CS          532               1                                           
+
+SQL> start query9
+SQL> --Find every student (all attributes are needed) who has taken more than 3 classes.
+SQL> --Write a query with a correlated subquery and write another query with an uncorrelated subquery.
+SQL> 
+SQL> -- co-relatted query
+SQL> select * from STUDENTS s
+  2  where exists (
+  3  	 select B#
+  4  	 from ENROLLMENTS  e
+  5  	 where e.B# = s.B#
+  6  	 GROUP BY e.B#
+  7  	 HAVING COUNT(e.CLASSID) > 3
+  8  );
+
+B#   FIRSTNAME       LASTNAME        STATUS            GPA EMAIL                
+---- --------------- --------------- ---------- ---------- -------------------- 
+BDATE     DEPT                                                                  
+--------- ----                                                                  
+B001 Anne            Broder          junior           3.17 broder@bu.edu        
+17-JAN-90 CS                                                                    
+                                                                                
+
+SQL> -- un-corelated Query
+SQL> SELECT  *
+  2  from STUDENTS s
+  3  where  B# in (
+  4  	 select B#
+  5  	 from ENROLLMENTS e
+  6  	 GROUP BY B#
+  7  	 HAVING COUNT(e.CLASSID) > 3
+  8  );
+
+B#   FIRSTNAME       LASTNAME        STATUS            GPA EMAIL                
+---- --------------- --------------- ---------- ---------- -------------------- 
+BDATE     DEPT                                                                  
+--------- ----                                                                  
+B001 Anne            Broder          junior           3.17 broder@bu.edu        
+17-JAN-90 CS                                                                    
+                                                                                
+
+SQL> start query10
+SQL> --Find every class (all attributes are needed) that is offered by the CS department
+SQL> --in the Spring semester of 2016
+SQL> --and has less than 3 students enrolled.
+SQL> --For this query, the use of the class_size information from the classes table is not permitted
+SQL> 
+SQL> select * from CLASSES
+  2  where DEPT_CODE = 'CS' and SEMESTER = 'Spring' and YEAR=2016  and	classid in (
+  3  select CLASSID from
+  4  (
+  5  SELECT ClassId, COUNT(B#)
+  6  FROM ENROLLMENTS
+  7  GROUP BY CLASSID
+  8  having count(B#) < 3)
+  9  );
+
+CLASS DEPT    COURSE#      SECT#       YEAR SEMESTER      LIMIT CLASS_SIZE FACU 
+----- ---- ---------- ---------- ---------- -------- ---------- ---------- ---- 
+c0001 CS          432          1       2016 Spring           35         34 B101 
+
+SQL> start query11
+SQL> --Find the B# and first name of every student who has taken all 400-level CS courses.
+SQL> --Here we are referring to courses, not classes
+SQL> 
+SQL> select s.B#,s.FIRSTNAME from students s where not exists
+  2  (
+  3  	 select * from courses co where co.dept_code = 'CS' and  co.COURSE# BETWEEN 400 and 499
+  4  	     and not exists
+  5  	       (
+  6  	       select * from ENROLLMENTS e, classes c
+  7  	       where e.classid = c.classid and
+  8  		     c.dept_code = co.dept_code and
+  9  		     c.course# = co.course# and
+ 10  		     s.B# = e.B#));
+
+B#   FIRSTNAME                                                                  
+---- ---------------                                                            
+B001 Anne                                                                       
+B003 Tracy                                                                      
+B004 Barbara                                                                    
+
+SQL> start query12
+SQL> --12. Find the title of each course that has been taken by student B001 but not by student B002
+SQL> 
+SQL> select TITLE from
+  2  COURSES
+  3  WHERE COURSE# in
+  4  		       (
+  5  			 select c.COURSE#
+  6  			 from Enrollments e join CLASSES c on e.CLASSID = c.CLASSID
+  7  			 where e.B# like 'B001'
+  8  			 MINUS
+  9  			 select c.COURSE#
+ 10  			 from Enrollments e join CLASSES c on e.CLASSID = c.CLASSID
+ 11  			 where e.B# like 'B002'
+ 12  		       );
+
+TITLE                                                                           
+--------------------                                                            
+database systems                                                                
+data structure                                                                  
+database systems                                                                
+
+SQL> start problem13
+SP2-0310: unable to open file "problem13.sql"
+SQL> start query13
+SQL> --13. Find the first name of every student who has taken at least one course that has been taken by student B005.
+SQL> --Note that here we are talking about taking the same course, not just the same class.
+SQL> --(Clearly, student B005 satisfies the condition and his first name should be included in the output.)
+SQL> select s.firstname from STUDENTS s
+  2  where s.B# in (
+  3  select e.B#
+  4  from ENROLLMENTS e, CLASSES c
+  5  where e.CLASSID = c.CLASSID
+  6  and  c.COURSE# = any(
+  7  			   select c.COURSE#
+  8  			   from Enrollments e join CLASSES c on e.CLASSID = c.CLASSID
+  9  			   where e.B# like 'B005'
+ 10  			 )
+ 11  			 );
+
+FIRSTNAME                                                                       
+---------------                                                                 
+Anne                                                                            
+Jack                                                                            
+Terry                                                                           
+
+SQL> start query14
+SQL> --14. Find the dept_code and course# of each course that has two or more classes in the same semester of the same year.
+SQL> --  The query should also show the semester and year information for each qualified course.
+SQL> 
+SQL> select dept_code,course#,SEMESTER,YEAR--,COUNT(CLASSID)
+  2  from Classes
+  3  GROUP BY dept_code,course#,SEMESTER,YEAR
+  4  HAVING COUNT(CLASSID) >= 2;
+
+DEPT    COURSE# SEMESTER       YEAR                                             
+---- ---------- -------- ----------                                             
+Math        314 Fall           2015                                             
+
+SQL> start query15
+SQL> --15. Find the B# and firstname of each student who has received at least one highest grade in one of the classes he/she has taken.
+SQL> -- Suppose all possible grades are (A, A-, B+, B, B-, C+, C, C-, D, F, I).
+SQL> -- Note that the highest grade given to students in a class is not necessarily A.
+SQL> --(Hint: You may need to utilize the number grade ngrade for this query.)
+SQL> 
+SQL> select B#,FIRSTname
+  2  from students s
+  3  where exists(
+  4  select *
+  5  from enrollments e, grades g
+  6  where e.lgrade = g.lgrade and
+  7  	   s.B# = e.B# and
+  8  	   (e.classid, g.ngrade) in (
+  9    select en.classid,max(gr.ngrade)
+ 10    from enrollments en, grades gr
+ 11    where en.lgrade = gr.lgrade
+ 12    group by en.classid
+ 13  )
+ 14  );
+
+B#   FIRSTNAME                                                                  
+---- ---------------                                                            
+B001 Anne                                                                       
+B002 Terry                                                                      
+B003 Tracy                                                                      
+B004 Barbara                                                                    
+B006 Terry                                                                      
+B007 Becky                                                                      
+
+6 rows selected.
+
+SQL> start query16
+SQL> --16. List the dept_code, course# and title of each course that has been taken by student B003.
+SQL> --For each such course, also list the grade the student received.
+SQL> --If no grade has been assigned for a class, output “to be assigned” as the grade information for the course.
+SQL> 
+SQL> 
+SQL> select co.DEPT_CODE,co.COURSE#,co.TITLE, NVL(e.lgrade,'to be assigned') from
+  2  COURSES co, enrollments e
+  3  where course# in (
+  4  select  cl.COURSE#
+  5  from Enrollments e1 join classes cl on e1.CLASSID = cl.CLASSID
+  6  where e.B# like 'B003'
+  7  	   and e.CLASSID = cl.CLASSID
+  8  );
+
+DEPT    COURSE# TITLE                NVL(E.LGRADE,'                             
+---- ---------- -------------------- --------------                             
+CS          432 database systems     I                                          
+CS          432 database systems     A                                          
+CS          240 data structure       to be assigned                             
+
+SQL> start query17
+SQL> --17. Find the dept_code, course# and title of each course whose title contains “systems” and that has been
+SQL> --taken by all students whose GPA is higher than 3.25. Note that even though a qualified course is required to be
+SQL> --taken by all students whose GPA is higher than 3.25, it may also be taken by some students
+SQL> --whose GPA is not higher than 3.25
+SQL> 
+SQL> select * from COURSES c where c.TITLE like '%systems%'
+  2  and  not exists
+  3  (select * from students s where s.gpa > 3.25 and not exists
+  4  (
+  5  select * from enrollments e, classes cl
+  6  where c.dept_code = cl.dept_code and
+  7  	   e.classid = cl.classid and
+  8  	   s.B# = e.B# and
+  9  	   c.COURSE# = cl.course#
+ 10  )
+ 11  );
+
+no rows selected
+
+SQL> 
+SQL> start query18
+SQL> --18. Find the B#, firstname and the total number of credits that have been earned by each student.
+SQL> --If a student has not taken any course, he/she is assumed to have earned zero credits and zero credits should be reported for such a student.
+SQL> --Don’t count the credits when no grade is given for a class.
+SQL> 
+SQL> select s.B#, s.FIRSTNAME, nvl(temp.total_credits,0) as total_credits
+  2    from students s
+  3  	 left join (
+  4  	       select t.B#,sum(c.CREDITS) as total_credits
+  5  	       from COURSE_CREDIT c,
+  6  		       (
+  7  			 select B#,c.COURSE#
+  8  			 from enrollments e join classes c
+  9  			 on e.classid = c.classid and e.lgrade is  not null
+ 10  			 ) t
+ 11  	       where c.COURSE# = t.course#
+ 12  	       GROUP by t.B# --,c.COURSE#
+ 13  	       --order by B#
+ 14  	       ) temp
+ 15  on temp.B# = s.B#;
+
+B#   FIRSTNAME       TOTAL_CREDITS                                              
+---- --------------- -------------                                              
+B001 Anne                       23                                              
+B002 Terry                       4                                              
+B003 Tracy                       8                                              
+B004 Barbara                     8                                              
+B005 Jack                        3                                              
+B006 Terry                       3                                              
+B007 Becky                       4                                              
+B008 Tom                         0                                              
+
+8 rows selected.
+
+SQL> start query19
+SQL> --18. Find the B#, firstname and the total number of credits that have been earned by each student.
+SQL> --If a student has not taken any course, he/she is assumed to have earned zero credits and zero credits should be reported for such a student.
+SQL> --Don’t count the credits when no grade is given for a class.
+SQL> select avg(finaltbl.total)
+  2  from
+  3  (
+  4  --select s.B#, s.FIRSTNAME,nvl(temp.total_credits,0) as total
+  5    select temp.total_credits as total
+  6  from students s
+  7  		     join (
+  8  			     select t.B#,sum(c.CREDITS) as total_credits from
+  9  			     COURSE_CREDIT c,
+ 10  			     (
+ 11  				   select B#,c.COURSE#
+ 12  				   from enrollments e join classes c
+ 13  				   on e.classid = c.classid and e.lgrade is  not null) t
+ 14  				   where c.COURSE# = t.course#
+ 15  				   GROUP by t.B#--,c.COURSE#
+ 16  				 --order by B#
+ 17  			    ) temp
+ 18  
+SQL> on temp.B# =s.B#) finaltbl
+SP2-0734: unknown command beginning "on temp.B#..." - rest of line ignored.
+SQL> start query19
+SQL> --18. Find the B#, firstname and the total number of credits that have been earned by each student.
+SQL> --If a student has not taken any course, he/she is assumed to have earned zero credits and zero credits should be reported for such a student.
+SQL> --Don’t count the credits when no grade is given for a class.
+SQL> select avg(finaltbl.total)
+  2  from
+  3  (
+  4  --select s.B#, s.FIRSTNAME,nvl(temp.total_credits,0) as total
+  5    select temp.total_credits as total
+  6  from students s
+  7  		     join (
+  8  			     select t.B#,sum(c.CREDITS) as total_credits from
+  9  			     COURSE_CREDIT c,
+ 10  			     (
+ 11  				   select B#,c.COURSE#
+ 12  				   from enrollments e join classes c
+ 13  				   on e.classid = c.classid and e.lgrade is  not null) t
+ 14  				   where c.COURSE# = t.course#
+ 15  				   GROUP by t.B#--,c.COURSE#
+ 16  				 --order by B#
+ 17  			    ) temp
+ 18  on temp.B# =s.B#) finaltbl
+ 19  ;
+
+AVG(FINALTBL.TOTAL)                                                             
+-------------------                                                             
+         7.57142857                                                             
+
+SQL> start query20
+SQL> -- Compute the GPA for each student from the student’s number grades (ngrade) for all the courses he/she has taken (ignore the GPA values already in the students table).
+SQL> -- The GPA of a student is computed by dividing the sum of his/her number grades by the number of classes he/she has taken and received a non-null number grade. If a student has not received any non-null grade yet, the student’s GPA will be null. For each student, the B# of the student and the computed GPA (name column head as cgpa) should be displayed.
+SQL> -- Display the results in descending non-null GPA values
+SQL> 
+SQL> select s.B#, nvl(to_char(tempInner.cgpa),' ') as cgpa
+  2  from students s  left join (
+  3  	     select e1.B#, sum(g1.nGRADE), count(e1.CLASSID),sum(g1.nGRADE) / count(e1.CLASSID) as cgpa
+  4  	     from ENROLLMENTS e1 join GRADES g1 on e1.LGRADE = g1.LGRADE
+  5  	     where g1.NGRADE is not null
+  6  	     group by e1.B# ) tempInner
+  7  on s.B# = tempInner.B#
+  8  order by tempInner.cgpa desc nulls last;
+
+B#   CGPA                                                                       
+---- ----------------------------------------                                   
+B003 4                                                                          
+B007 4                                                                          
+B006 4                                                                          
+B001 3.16666666666666666666666666666666666667                                   
+B002 3                                                                          
+B005 3                                                                          
+B004 2.65                                                                       
+B008                                                                            
+
+8 rows selected.
+
+SQL> spool off

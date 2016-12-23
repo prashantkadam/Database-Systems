@@ -1,0 +1,286 @@
+
+Database Systems Project 1 Solution
+
+SQL> set echo on
+SQL> @query1-16
+SQL> select c1.dept_code || c1.course# as course_id, title
+  2  from courses c1, classes c2
+  3  where c1.dept_code = c2.dept_code and c1.course# = c2.course#
+  4  and c2.year = 2016 and c2.semester = 'Spring';
+
+COURSE_ID                                    TITLE                              
+-------------------------------------------- --------------------               
+CS432                                        database systems                   
+CS240                                        data structure                     
+Math221                                      calculus I                         
+CS532                                        database systems                   
+
+SQL> 
+SQL> @query2-16
+SQL> select B#, firstname, lastname, gpa from students where B# in
+  2  ((select B# from enrollments where classid in
+  3  (select classid from classes where dept_code = 'CS'))
+  4  intersect
+  5  (select B# from enrollments where classid in
+  6  (select classid from classes where dept_code = 'Math')));
+
+B#   FIRSTNAME       LASTNAME               GPA                                 
+---- --------------- --------------- ----------                                 
+B001 Anne            Broder                3.17                                 
+
+SQL> 
+SQL> @query3-16
+SQL> column dept_code format a9
+SQL> select dept_code, course# from courses
+  2  where (dept_code, course#) not in
+  3  (select dept_code, course# from classes where semester = 'Fall' and year = 2015);
+
+DEPT_CODE    COURSE#                                                            
+--------- ----------                                                            
+Biol             425                                                            
+CS               532                                                            
+CS               240                                                            
+Math             221                                                            
+CS               432                                                            
+CS               552                                                            
+
+6 rows selected.
+
+SQL> 
+SQL> @query4-16
+SQL> select B#, firstname, lastname, gpa from students
+  2  where status in ('MS', 'PhD') and B# in
+  3  (select B# from enrollments where lgrade in ('B-', 'C+', 'C', 'C-', 'D', 'F'));
+
+no rows selected
+
+SQL> 
+SQL> @query5-16
+SQL> select firstname || ' ' || lastname as name from students where B# not in
+  2  (select B# from enrollments where lgrade = 'A');
+
+NAME                                                                            
+-------------------------------                                                 
+Terry Buttler                                                                   
+Barbara Callan                                                                  
+Jack Smith                                                                      
+Tom Baker                                                                       
+
+SQL> 
+SQL> @query6-16
+SQL> column student_B# format a10
+SQL> column faculty_B# format a10
+SQL> select s.B# student_B#, f.B# faculty_B# from students s, faculty f
+  2  where (s.B#, f.B#) in (select s1.B#, f1.B# from students s1, enrollments e,
+  3  classes c, faculty f1 where s1.B# = e.B# and e.classid = c.classid and
+  4  c.faculty_B# = f1.B# and s.deptname <> f.deptname);
+
+STUDENT_B# FACULTY_B#                                                           
+---------- ----------                                                           
+B001       B103                                                                 
+B004       B104                                                                 
+B004       B101                                                                 
+B006       B102                                                                 
+B007       B105                                                                 
+
+SQL> 
+SQL> @query7-16
+SQL> column dept_code format a9
+SQL> select dept_code, course# from courses where (dept_code, course#) in
+  2  (select dept_code, course# from classes group by dept_code, course#
+  3  having count(*) = (select max(count(*))
+  4  from classes group by dept_code, course#));
+
+DEPT_CODE    COURSE#                                                            
+--------- ----------                                                            
+Math             314                                                            
+CS               432                                                            
+
+SQL> @query8-16
+SQL> column dept_code format a9
+SQL> select classid, dept_code, course#, limit - class_size as seats_available
+  2  from classes where year = 2016 and semester = 'Spring' and limit > class_size;
+
+CLASS DEPT_CODE    COURSE# SEATS_AVAILABLE                                      
+----- --------- ---------- ---------------                                      
+c0005 CS               240               1                                      
+c0001 CS               432               1                                      
+c0006 CS               532               1                                      
+
+SQL> @query9a-16
+SQL> select * from students s where B# in (select B#
+  2  from enrollments group by B# having count(*) > 3);
+
+B#   FIRSTNAME       LASTNAME        STATUS            GPA EMAIL                
+---- --------------- --------------- ---------- ---------- -------------------- 
+BDATE     DEPT                                                                  
+--------- ----                                                                  
+B001 Anne            Broder          junior           3.17 broder@bu.edu        
+17-JAN-90 CS                                                                    
+                                                                                
+
+SQL> @query9b-16
+SQL> select * from students s where (select count(*)
+  2  from enrollments where B# = s.B#) > 3;
+
+B#   FIRSTNAME       LASTNAME        STATUS            GPA EMAIL                
+---- --------------- --------------- ---------- ---------- -------------------- 
+BDATE     DEPT                                                                  
+--------- ----                                                                  
+B001 Anne            Broder          junior           3.17 broder@bu.edu        
+17-JAN-90 CS                                                                    
+                                                                                
+
+SQL> @query10-16
+SQL> select * from classes c where dept_code = 'CS' and year = 2016
+  2  and semester = 'Spring' and (select count(*) from enrollments
+  3  where classid = c.classid) < 3;
+
+CLASS DEPT_CODE    COURSE#      SECT#       YEAR SEMESTER      LIMIT CLASS_SIZE 
+----- --------- ---------- ---------- ---------- -------- ---------- ---------- 
+FACULTY_B#                                                                      
+----------                                                                      
+c0001 CS               432          1       2016 Spring           35         34 
+B101                                                                            
+                                                                                
+
+SQL> @query11-16
+SQL> select B#, firstname from students s where not exists
+  2  (select * from courses c where dept_code = 'CS' and
+  3  course# like '4%' and not exists
+  4  (select e.* from enrollments e, classes c1
+  5  where e.B# = s.B# and e.classid = c1.classid and
+  6  c1.dept_code = c.dept_code and c1.course# = c.course#));
+
+B#   FIRSTNAME                                                                  
+---- ---------------                                                            
+B001 Anne                                                                       
+B003 Tracy                                                                      
+B004 Barbara                                                                    
+
+SQL> @query12-16
+SQL> select title from courses where (dept_code, course#) in
+  2  ((select dept_code, course# from classes where classid in
+  3  (select classid from enrollments where B# = 'B001')) minus
+  4  (select dept_code, course# from classes where
+  5  classid in (select classid from enrollments where B# = 'B002')));
+
+TITLE                                                                           
+--------------------                                                            
+data structure                                                                  
+database systems                                                                
+database systems                                                                
+
+SQL> @query13-16
+SQL> select firstname from students where B# in
+  2  (select e.B# from enrollments e, classes c
+  3  where e.classid = c.classid and (dept_code, course#) in
+  4  (select c1.dept_code, c1.course# from classes c1, enrollments e1
+  5  where e1.B# = 'B005' and c1.classid = e1.classid));
+
+FIRSTNAME                                                                       
+---------------                                                                 
+Jack                                                                            
+Terry                                                                           
+Anne                                                                            
+
+SQL> @query14-16
+SQL> select year, semester, dept_code, course# from classes
+  2  group by year, semester, dept_code, course# having count(*) >= 2;
+
+      YEAR SEMESTER DEPT_CODE    COURSE#                                        
+---------- -------- --------- ----------                                        
+      2015 Fall     Math             314                                        
+
+SQL> @query15-16
+SQL> select B#, firstname from students where B# in
+  2  (select e.B# from enrollments e, grades g where e.lgrade = g.lgrade and
+  3  g.ngrade in (select max(ngrade) from enrollments e1, grades g1
+  4  where e1.classid = e.classid and e1.lgrade = g1.lgrade));
+
+B#   FIRSTNAME                                                                  
+---- ---------------                                                            
+B001 Anne                                                                       
+B002 Terry                                                                      
+B003 Tracy                                                                      
+B004 Barbara                                                                    
+B006 Terry                                                                      
+B007 Becky                                                                      
+
+6 rows selected.
+
+SQL> @query16-16
+SQL> select c.dept_code, c.course#, c.title,
+  2  nvl(e.lgrade, 'to be assigned') as grade
+  3  from courses c, classes c1, enrollments e where c.dept_code = c1.dept_code
+  4  and c.course# = c1.course# and e.B# = 'B003' and c1.classid = e.classid;
+
+DEPT_CODE    COURSE# TITLE                GRADE                                 
+--------- ---------- -------------------- --------------                        
+CS               432 database systems     I                                     
+CS               432 database systems     A                                     
+CS               240 data structure       to be assigned                        
+
+SQL> @query17-16
+SQL> select c.dept_code, c.course#, c.title from courses c, classes c1
+  2  where c.title like '%systems%' and c.dept_code = c1.dept_code
+  3  and c.course# = c1.course# and not exists
+  4  (select * from students s where s.gpa > 3.25 and not exists
+  5  (select * from enrollments e where e.B# = s.B# and e.classid = c1.classid));
+
+no rows selected
+
+SQL> @query18-16
+SQL> (select s.B#, s.firstname, sum(credits)
+  2  from students s, courses c, course_credit cc, classes c1, enrollments e
+  3  where s.B# = e.B# and c.dept_code = c1.dept_code and
+  4  c.course# = c1.course# and c.course# = cc.course# and c1.classid = e.classid
+  5  and e.lgrade is not null group by s.B#, s.firstname) union
+  6  (select B#, firstname, 0 from students where B# not in
+  7  (select B# from enrollments));
+
+B#   FIRSTNAME       SUM(CREDITS)                                               
+---- --------------- ------------                                               
+B001 Anne                      23                                               
+B002 Terry                      4                                               
+B003 Tracy                      8                                               
+B004 Barbara                    8                                               
+B005 Jack                       3                                               
+B006 Terry                      3                                               
+B007 Becky                      4                                               
+B008 Tom                        0                                               
+
+8 rows selected.
+
+SQL> @query19-16
+SQL> select avg(temp.totalcredits) from (select e.B#, sum(credits) totalcredits
+  2  from enrollments e, courses c, course_credit cc, classes c1
+  3  where e.classid = c1.classid and c.dept_code = c1.dept_code
+  4  and c.course# = c1.course# and c.course# = cc.course#
+  5  and e.lgrade is not null group by e.B#) temp;
+
+AVG(TEMP.TOTALCREDITS)                                                          
+----------------------                                                          
+            7.57142857                                                          
+
+SQL> @query20-16
+SQL> ((select e.B#, sum(g.ngrade)/count(*) as cgpa
+  2  from enrollments e, grades g where e.lgrade = g.lgrade and g.ngrade is not null
+  3  group by e.B#) union
+  4  (select B#, null from students where B# not in (select B# from enrollments)))
+  5  order by cgpa desc;
+
+B#         CGPA                                                                 
+---- ----------                                                                 
+B008                                                                            
+B003          4                                                                 
+B006          4                                                                 
+B007          4                                                                 
+B001 3.16666667                                                                 
+B002          3                                                                 
+B005          3                                                                 
+B004       2.65                                                                 
+
+8 rows selected.
+
+SQL> spool off

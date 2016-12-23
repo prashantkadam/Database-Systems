@@ -1,0 +1,9 @@
+drop table enrollments;
+drop table grades;
+drop table classes;
+drop table prerequisites;
+drop table course_credit;
+drop table courses;
+drop table students;
+drop table logs;
+drop sequence seq_logs;
